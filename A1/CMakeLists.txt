@@ -13,6 +13,6 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 # Add source files to the executable
 add_executable(A1
     src/A1.cpp
-    src/helper.cpp
+    src/charge_points.cpp
+    src/data_loader.cpp
 )
-

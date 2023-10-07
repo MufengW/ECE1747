@@ -10,7 +10,7 @@ fi
 git clean -xdf
 
 rm -rf build
-mkdir -p build
+mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
 make
