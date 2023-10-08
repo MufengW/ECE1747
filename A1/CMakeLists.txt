@@ -14,5 +14,5 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 add_executable(A1
     src/A1.cpp
     src/charge_points.cpp
-    src/data_loader.cpp
+    src/data_processor.cpp
 )

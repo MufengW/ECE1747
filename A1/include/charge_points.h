@@ -1,22 +1,25 @@
 #pragma once
-
+#include <limits>
 class ChargePoint {
 private:
-    int x, y;
-    double distance_to_neighbour;
+    double x, y;
+    // double distance_to_neighbour;
 
 public:
     ChargePoint();
-    ChargePoint(int x, int y);
+    ChargePoint(double x, double y);
 
-    int getX() const;
-    int getY() const;
-    double getDist() const;
+    double getX() const;
+    double getY() const;
+    // double getDist() const;
 
-    void setX(int x);
-    void setY(int y);
-    void setDist(double distance_to_neighbour);
+    void setX(double x);
+    void setY(double y);
+    // void setDist(double distance_to_neighbour);
 
-    /* Member function to compute distance between two points */
+    /* Member function to compute the distance between two points */
     static double distance(const ChargePoint& p1, const ChargePoint& p2);
+    double compute_force(double dist);
+    const double q = 1.6e-19;
+    const double k = 8.99e9;
 };

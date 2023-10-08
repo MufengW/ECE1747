@@ -1,4 +1,4 @@
-#include "data_loader.h"
+#include "data_processor.h"
 
 std::vector<ChargePoint> load_data(const std::string& filename) {
     std::ifstream file(filename);
@@ -16,26 +16,29 @@ std::vector<ChargePoint> load_data(const std::string& filename) {
 
         std::string value;
         std::getline(ss, value, ',');
-        point.setX(std::stod(value));
+        point.setX(std::stod(value) * angstromToMeter);
 
         std::getline(ss, value, ',');
-        point.setY(std::stod(value));
+        point.setY(std::stod(value) * angstromToMeter);
 
-        point.setDist(std::numeric_limits<double>::max());
+        // point.setDist(std::numeric_limits<double>::max());
         points.push_back(point);
     }
 
     file.close();
-    set_neighbour_distances(points);
     return points;
 }
 
-void set_neighbour_distances(std::vector<ChargePoint>& points) {
+void compute_and_print_force(std::vector<ChargePoint>& points) {
+    double dist = 0;
+    double force = 0;
     for (unsigned long i = 0; i < points.size(); ++i) {
         double dist_to_prev = (i > 0) ?
             ChargePoint::distance(points[i], points[i - 1]) : std::numeric_limits<double>::max();
         double dist_to_next = (i < points.size() - 1) ?
             ChargePoint::distance(points[i], points[i + 1]) : std::numeric_limits<double>::max();
-        points[i].setDist(std::min(dist_to_prev, dist_to_next));
+        dist = std::min(dist_to_prev, dist_to_next);
+        force = points[i].compute_force(dist);
+        std::cout << "force = " << force << std::endl;
     }
 }

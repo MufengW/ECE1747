@@ -4,8 +4,9 @@
 #include <sstream>
 #include <vector>
 #include <string>
-#include <limits>
 #include "charge_points.h"
 
+const double angstromToMeter = 1e-10;
+
 std::vector<ChargePoint> load_data(const std::string& filename);
-void set_neighbour_distances(std::vector<ChargePoint>& points);
+void compute_and_print_force(std::vector<ChargePoint>& points);
