@@ -1,44 +1,37 @@
 #include "data_processor.h"
 
-std::vector<ChargePoint> load_data(const std::string& filename) {
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open the file." << std::endl;
-        exit(1);
-    }
-
-    std::vector<ChargePoint> points;
+void populate_linesArray(const std::string& data_buffer) {
+    std::stringstream ss(data_buffer);
     std::string line;
-
-    while (std::getline(file, line)) {
-        std::stringstream ss(line);
-        ChargePoint point;
-
-        std::string value;
-        std::getline(ss, value, ',');
-        point.setX(std::stod(value) * angstromToMeter);
-
-        std::getline(ss, value, ',');
-        point.setY(std::stod(value) * angstromToMeter);
-
-        // point.setDist(std::numeric_limits<double>::max());
-        points.push_back(point);
+    while (std::getline(ss, line)) {
+        /* Remove trailing \r character if present */
+        if (!line.empty() && line.back() == '\r') {
+            line.pop_back();
+        }
+        linesArray.push_back(line);
     }
-
-    file.close();
-    return points;
+    M_assert(linesArray.size() > 1, "There is only 1 partical!");
 }
 
-void compute_and_print_force(std::vector<ChargePoint>& points) {
-    double dist = 0;
-    double force = 0;
-    for (unsigned long i = 0; i < points.size(); ++i) {
-        double dist_to_prev = (i > 0) ?
-            ChargePoint::distance(points[i], points[i - 1]) : std::numeric_limits<double>::max();
-        double dist_to_next = (i < points.size() - 1) ?
-            ChargePoint::distance(points[i], points[i + 1]) : std::numeric_limits<double>::max();
-        dist = std::min(dist_to_prev, dist_to_next);
-        force = points[i].compute_force(dist);
-        std::cout << "force = " << force << std::endl;
+/* Helper function to update chunk boundaries */
+void set_chunk_boundaries(size_t num_threads) {
+    chunk_boundaries.clear();  /* Clear any previous boundaries */
+
+    /* Determine the average number of lines per chunk */
+    size_t avg_lines_per_chunk = linesArray.size() / num_threads;
+    size_t extra_lines = linesArray.size() % num_threads;
+
+    size_t start_pos = 0;
+    for (size_t i = 0; i < num_threads; ++i) {
+        size_t lines_for_this_chunk = avg_lines_per_chunk;
+        if (extra_lines > 0) {
+            lines_for_this_chunk++;
+            extra_lines--;
+        }
+
+        size_t end_pos = start_pos + lines_for_this_chunk;
+
+        chunk_boundaries.push_back({start_pos, end_pos});
+        start_pos = end_pos;
     }
 }
