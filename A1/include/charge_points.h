@@ -9,11 +9,18 @@ const double angstromToMeter = 1e-10;
 extern std::vector<std::string> linesArray;
 extern std::vector<std::pair<size_t, size_t>> chunk_boundaries;
 
-struct ChargePoint {
+struct Particle {
     int x;
     int y;
-    ChargePoint() : x(0.0), y(0.0) {}
-    ChargePoint(int x_val, int y_val) : x(x_val), y(y_val) {}
+    Particle() : x(0.0), y(0.0) {}
+    Particle(int x_val, int y_val) : x(x_val), y(y_val) {}
 };
 
-void compute_and_print_force(std::pair<size_t, size_t> boundary);
+struct ParticleInfo : Particle {
+    double force;
+    ParticleInfo() : Particle(), force(0.0) {}
+    ParticleInfo(Particle p, double f_val) : Particle(p.x, p.y), force(f_val) {}
+};
+extern std::vector<ParticleInfo> particles;
+void compute_and_print_force(std::pair<size_t, size_t> boundary, int thread_id);
+void printParticles(const std::vector<ParticleInfo>& particles);

@@ -1,5 +1,7 @@
 #pragma once
 #include <iostream>
+#include <sstream>
+#include <fstream>
 #include <cstdio>
 #include <stdexcept>
 
@@ -20,7 +22,10 @@
         do { \
             char logMessage[512]; \
             snprintf(logMessage, sizeof(logMessage), format, ##__VA_ARGS__); \
-            std::cerr << "LOG: " << logMessage << std::endl; \
+            std::ostringstream oss; \
+            oss << "LOG: " << logMessage << "\n"; \
+            std::ofstream logFile("log.txt", std::ios_base::app); \
+            logFile << oss.str(); \
         } while (false)
 #else
     /* Empty definition for release mode */

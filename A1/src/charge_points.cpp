@@ -1,20 +1,21 @@
 #include "charge_points.h"
 #include "log.h"
 #include <cmath>
+#include <thread>
 #include <sstream>
 
-double distance(const ChargePoint& p1, const ChargePoint& p2) {
+double distance(const Particle& p1, const Particle& p2) {
     double dx = (p1.x - p2.x) * angstromToMeter;
     double dy = (p1.y - p2.y) * angstromToMeter;
     return std::sqrt(std::pow(dx,2) + std::pow(dy,2));
 }
 
-double compute_force(const ChargePoint& p, const ChargePoint& p_prev, const ChargePoint& p_next) {
+double compute_force(const Particle& p, const Particle& p_prev, const Particle& p_next) {
     double dist = std::min(distance(p, p_prev), distance(p, p_next));
     return k * std::pow(q,2) / std::pow(dist,2);
 }
 
-ChargePoint parseLineToChargePoint(const std::string& line) {
+Particle parseLineToChargePoint(const std::string& line) {
     std::stringstream ss(line);
     std::string token;
     std::vector<std::string> tokens;
@@ -30,52 +31,54 @@ ChargePoint parseLineToChargePoint(const std::string& line) {
 
     int x_val = std::stod(tokens[0]);
     int y_val = std::stod(tokens[1]);
-    return ChargePoint(x_val, y_val);
+    return Particle(x_val, y_val);
 }
 
-void print_result(const ChargePoint p, double force) {
+void print_result(const Particle& p, double force, int thread_id) {
     char output_buffer[256];
-    snprintf(output_buffer, sizeof(output_buffer), "%d %d force = %e\n",
-            static_cast<int>(p.x),
-            static_cast<int>(p.y),
-            force);
-    std::string output = output_buffer;
-    std::cout << output;
+    snprintf(output_buffer, sizeof(output_buffer),
+             "Thread ID: %d, %d %d force = %e",
+             thread_id,
+             p.x,
+             p.y,
+             force);
+
+    M_log(output_buffer);
 }
 
-void compute_and_print_force(std::pair<size_t, size_t> boundary) {
-    size_t start = std::max(0, static_cast<int>(boundary.first - 1));
-    size_t end = std::min(linesArray.size(), boundary.second + 1);
-    if(start == 0) {
-        std::string cur_line = linesArray[0];
-        std::string next_line = linesArray[1];
-        ChargePoint p_prev = ChargePoint(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
-        ChargePoint p = parseLineToChargePoint(cur_line);
-        ChargePoint p_next = parseLineToChargePoint(next_line);
+void compute_and_print_force(std::pair<size_t, size_t> boundary, int thread_id) {
+    std::string cur_line, prev_line, next_line;
+    Particle p, p_prev, p_next;
+    size_t start = boundary.first;
+    size_t end = boundary.second;
+    for (size_t i = start; i < end; ++i) {
+        cur_line = linesArray[i];
+        p = parseLineToChargePoint(cur_line);
+        if (i != 0) {
+            prev_line = linesArray[i - 1];
+            p_prev = parseLineToChargePoint(prev_line);
+        } else {
+            p_prev = Particle(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
+        }
+        if (i != linesArray.size() - 1) {
+            next_line = linesArray[i + 1];
+            p_next = parseLineToChargePoint(next_line);
+        } else {
+            p_next = Particle(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
+        }
         double force = compute_force(p, p_prev, p_next);
 
-        print_result(p,force);
+        particles[i] = ParticleInfo(p, force);
+        print_result(p,force, thread_id);
     }
-    for (size_t i = start + 1; i < end - 1; ++i) {
-        std::string prev_line = linesArray[i-1];
-        std::string cur_line = linesArray[i];
-        std::string next_line = linesArray[i+1];
-        ChargePoint p_prev = parseLineToChargePoint(prev_line);
-        ChargePoint p = parseLineToChargePoint(cur_line);
-        ChargePoint p_next = parseLineToChargePoint(next_line);
-        double force = compute_force(p, p_prev, p_next);
+}
 
-        print_result(p,force);
+void printParticles(const std::vector<ParticleInfo>& particles) {
+    std::cout << "Printing particle information:\n";
+    for (size_t i = 0; i < particles.size(); ++i) {
+        std::cout << "Particle " << i + 1 << ": "
+                  << "x = " << particles[i].x << ", "
+                  << "y = " << particles[i].y << ", "
+                  << "force = " << particles[i].force << "\n";
     }
-    if (end == linesArray.size()) {
-        std::string prev_line = linesArray[end - 2];
-        std::string cur_line = linesArray[end-1];
-        ChargePoint p_prev = parseLineToChargePoint(prev_line);
-        ChargePoint p = parseLineToChargePoint(cur_line);
-        ChargePoint p_next = ChargePoint(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
-        double force = compute_force(p, p_prev, p_next);
-
-        print_result(p,force);
-    }
-
 }
