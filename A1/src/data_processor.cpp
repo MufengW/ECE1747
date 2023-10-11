@@ -1,5 +1,35 @@
 #include "data_processor.h"
 
+void print_chunk_boundaries() {
+    std::cout << "Chunk Boundaries:" << std::endl;
+    for (size_t i = 0; i < chunk_boundaries.size(); ++i) {
+        std::cout << "Chunk " << (i + 1) << ": Start = " << chunk_boundaries[i].first
+                  << ", End = " << chunk_boundaries[i].second << std::endl;
+    }
+}
+
+void print_linesArray() {
+    for (const std::string& line : linesArray) {
+        std::cout << line << std::endl;
+    }
+}
+
+void load_data(const std::string file_name, size_t thread_count) {
+    /* Load the entire file into data_buffer */
+    std::string data_buffer;
+    std::ifstream file(file_name);
+    std::stringstream ss;
+    ss << file.rdbuf();
+    data_buffer = ss.str();
+    file.close();
+    populate_linesArray(data_buffer);
+    set_chunk_boundaries(thread_count);
+#ifndef NDEBUG
+    print_chunk_boundaries();
+    print_linesArray();
+#endif
+}
+
 void populate_linesArray(const std::string& data_buffer) {
     std::stringstream ss(data_buffer);
     std::string line;
