@@ -70,10 +70,6 @@ int main(int argc, char** argv) {
             M_log("Invalid mode specified: %d", mode);
             return 1;
     }
-
-    /* Finalize the MPI environment */
-    MPI_Finalize();
-
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     std::cout << "Mode " << mode << " with " << g_thread_count << (g_thread_count > 1 ? " threads " : " thread ")
@@ -81,5 +77,7 @@ int main(int argc, char** argv) {
         << g_particle_limit << " particles." << std::endl;
     M_log("Mode%d executed in %ld microseconds", mode, duration.count());
     printParticles();
+    /* Finalize the MPI environment */
+    MPI_Finalize();
     return 0;
 }

@@ -49,16 +49,12 @@ void compute_and_print_force(std::pair<size_t, size_t> boundary, int thread_id) 
     Particle p, p_prev, p_next;
     size_t start = boundary.first;
     size_t end = boundary.second;
-    std::deque<Particle> subQueue(g_dataArray.begin() + start, g_dataArray.begin() + end);
-    Particle max_p = Particle(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
-    subQueue.push_front(max_p);
-    subQueue.push_back(max_p);
-    for (size_t i = 1; i < subQueue.size() - 1; ++i) {
-        p = subQueue[i];
-        p_prev = subQueue[i-1];
-        p_next = subQueue[i+1];
+    for (size_t i = start + 1; i < end + 1; ++i) {
+        p = g_dataArray[i];
+        p_prev = g_dataArray[i-1];
+        p_next = g_dataArray[i+1];
         double force = compute_force(p, p_prev, p_next);
-        g_particles[i + start - 1] = ParticleInfo(p, force);
+        g_particles[i - 1] = ParticleInfo(p, force);
 #ifdef DEBUG_MODE
         print_result(p,force, thread_id);
 #endif

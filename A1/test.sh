@@ -34,19 +34,19 @@ else
 fi
 
 if [[ -z "$max_lines" ]]; then
-    build/A1 1 1 > 1.out &> /dev/null
-    build/A1 2 "$thread_count" > 2.out &> /dev/null
+    build/A1 1 1 > 1.out 2> /dev/null
+    build/A1 2 "$thread_count" > 2.out 2> /dev/null
 else
-    build/A1 1 1 "$max_lines" > 1.out &> /dev/null
-    build/A1 2 "$thread_count" "$max_lines" > 2.out &> /dev/null
+    build/A1 1 1 "$max_lines" > 1.out 2> /dev/null
+    build/A1 2 "$thread_count" "$max_lines" > 2.out 2> /dev/null
 fi
 
 # Print the first line of 1.out and 2.out
 head -n 1 1.out
 head -n 1 2.out
 
-tail -n +3 1.out > result1.out &> /dev/null
-tail -n +3 2.out > result2.out &> /dev/null
+tail -n +3 1.out > result1.out
+tail -n +3 2.out > result2.out
 
 if diff -q result1.out result2.out >/dev/null; then
     echo "Test passed!"

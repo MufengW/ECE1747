@@ -61,6 +61,10 @@ void set_chunk_boundaries() {
         g_chunk_boundaries.push_back({start_pos, end_pos});
         start_pos = end_pos;
     }
+    /* Pad inf particle at beginning and end for easy computing */
+    Particle max_p = Particle(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
+    g_dataArray.push_front(max_p);
+    g_dataArray.push_back(max_p);
 }
 
 void print_chunk_boundaries() {
