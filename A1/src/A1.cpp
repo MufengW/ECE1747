@@ -11,9 +11,7 @@
 #include "parallel.h"
 #include "log.h"
 
-
-
-std::vector<std::string> g_linesArray;
+std::deque<Particle> g_dataArray;
 std::vector<std::pair<size_t, size_t>> g_chunk_boundaries;
 size_t g_thread_count = 1;
 size_t g_particle_limit = std::numeric_limits<size_t>::max();
@@ -85,4 +83,3 @@ int main(int argc, char** argv) {
     printParticles();
     return 0;
 }
-

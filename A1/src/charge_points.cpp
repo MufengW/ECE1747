@@ -3,7 +3,6 @@
 #include <cmath>
 #include <thread>
 #include <sstream>
-
 double distance(const Particle& p1, const Particle& p2) {
     double dx = (p1.x - p2.x) * angstromToMeter;
     double dy = (p1.y - p2.y) * angstromToMeter;
@@ -47,28 +46,19 @@ void print_result(const Particle& p, double force, int thread_id) {
 }
 
 void compute_and_print_force(std::pair<size_t, size_t> boundary, int thread_id) {
-    std::string cur_line, prev_line, next_line;
     Particle p, p_prev, p_next;
     size_t start = boundary.first;
     size_t end = boundary.second;
-    for (size_t i = start; i < end; ++i) {
-        cur_line = g_linesArray[i];
-        p = parseLineToChargePoint(cur_line);
-        if (i != 0) {
-            prev_line = g_linesArray[i - 1];
-            p_prev = parseLineToChargePoint(prev_line);
-        } else {
-            p_prev = Particle(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
-        }
-        if (i != g_linesArray.size() - 1) {
-            next_line = g_linesArray[i + 1];
-            p_next = parseLineToChargePoint(next_line);
-        } else {
-            p_next = Particle(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
-        }
+    std::deque<Particle> subQueue(g_dataArray.begin() + start, g_dataArray.begin() + end);
+    Particle max_p = Particle(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
+    subQueue.push_front(max_p);
+    subQueue.push_back(max_p);
+    for (size_t i = 1; i < subQueue.size() - 1; ++i) {
+        p = subQueue[i];
+        p_prev = subQueue[i-1];
+        p_next = subQueue[i+1];
         double force = compute_force(p, p_prev, p_next);
-
-        g_particles[i] = ParticleInfo(p, force);
+        g_particles[i + start - 1] = ParticleInfo(p, force);
 #ifdef DEBUG_MODE
         print_result(p,force, thread_id);
 #endif
