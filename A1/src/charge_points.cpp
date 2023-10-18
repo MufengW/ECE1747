@@ -52,33 +52,35 @@ void compute_and_print_force(std::pair<size_t, size_t> boundary, int thread_id) 
     size_t start = boundary.first;
     size_t end = boundary.second;
     for (size_t i = start; i < end; ++i) {
-        cur_line = linesArray[i];
+        cur_line = g_linesArray[i];
         p = parseLineToChargePoint(cur_line);
         if (i != 0) {
-            prev_line = linesArray[i - 1];
+            prev_line = g_linesArray[i - 1];
             p_prev = parseLineToChargePoint(prev_line);
         } else {
             p_prev = Particle(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
         }
-        if (i != linesArray.size() - 1) {
-            next_line = linesArray[i + 1];
+        if (i != g_linesArray.size() - 1) {
+            next_line = g_linesArray[i + 1];
             p_next = parseLineToChargePoint(next_line);
         } else {
             p_next = Particle(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
         }
         double force = compute_force(p, p_prev, p_next);
 
-        particles[i] = ParticleInfo(p, force);
+        g_particles[i] = ParticleInfo(p, force);
+#ifdef DEBUG_MODE
         print_result(p,force, thread_id);
+#endif
     }
 }
 
-void printParticles(const std::vector<ParticleInfo>& particles) {
+void printParticles() {
     std::cout << "Printing particle information:\n";
-    for (size_t i = 0; i < particles.size(); ++i) {
+    for (size_t i = 0; i < g_particles.size(); ++i) {
         std::cout << "Particle " << i + 1 << ": "
-                  << "x = " << particles[i].x << ", "
-                  << "y = " << particles[i].y << ", "
-                  << "force = " << particles[i].force << "\n";
+                  << "x = " << g_particles[i].x << ", "
+                  << "y = " << g_particles[i].y << ", "
+                  << "force = " << g_particles[i].force << "\n";
     }
 }

@@ -12,6 +12,7 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Add strict compiler flags
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions(-DDEBUG_MODE)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror")
     elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
@@ -24,9 +25,26 @@ add_executable(A1
     src/A1.cpp
     src/charge_points.cpp
     src/data_processor.cpp
+    src/parallel.cpp
 )
 
-# Link against pthread
+# Find required packages
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-target_link_libraries(A1 PRIVATE Threads::Threads)
+find_package(MPI REQUIRED)
+
+# Link against pthread and MPI
+target_link_libraries(A1 PRIVATE Threads::Threads ${MPI_LIBRARIES})
+
+# Include MPI directories
+include_directories(${MPI_INCLUDE_PATH})
+
+if(MPI_COMPILE_FLAGS)
+  set_target_properties(A1 PROPERTIES
+    COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
+endif()
+
+if(MPI_LINK_FLAGS)
+  set_target_properties(A1 PROPERTIES
+    LINK_FLAGS "${MPI_LINK_FLAGS}")
+endif()

@@ -34,11 +34,11 @@ else
 fi
 
 if [[ -z "$max_lines" ]]; then
-    build/A1 1 1 > 1.out 2>&1
-    build/A1 2 "$thread_count" > 2.out 2>&1
+    build/A1 1 1 > 1.out
+    build/A1 2 "$thread_count" > 2.out
 else
-    build/A1 1 1 "$max_lines" > 1.out 2>&1
-    build/A1 2 "$thread_count" "$max_lines" > 2.out 2>&1
+    build/A1 1 1 "$max_lines" > 1.out
+    build/A1 2 "$thread_count" "$max_lines" > 2.out
 fi
 
 # Print the first line of 1.out and 2.out
