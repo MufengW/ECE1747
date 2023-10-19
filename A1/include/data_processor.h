@@ -5,9 +5,10 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include "global.h"
 #include "log.h"
 #include "charge_points.h"
 
-extern size_t g_thread_count;
-extern size_t g_particle_limit;
+extern GlobalConfig g_config;
+extern GlobalData g_data;
 void load_data(const std::string filen_name);

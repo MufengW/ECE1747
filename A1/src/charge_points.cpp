@@ -50,11 +50,11 @@ void compute_and_print_force(std::pair<size_t, size_t> boundary, int thread_id) 
     size_t start = boundary.first;
     size_t end = boundary.second;
     for (size_t i = start + 1; i < end + 1; ++i) {
-        p = g_dataArray[i];
-        p_prev = g_dataArray[i-1];
-        p_next = g_dataArray[i+1];
+        p = g_data.particleVector[i];
+        p_prev = g_data.particleVector[i-1];
+        p_next = g_data.particleVector[i+1];
         double force = compute_force(p, p_prev, p_next);
-        g_particles[i - 1] = ParticleInfo(p, force);
+        g_data.particles[i - 1] = ParticleInfo(p, force);
 #ifdef DEBUG_MODE
         print_result(p,force, thread_id);
 #endif
@@ -63,10 +63,10 @@ void compute_and_print_force(std::pair<size_t, size_t> boundary, int thread_id) 
 
 void printParticles() {
     std::cout << "Printing particle information:\n";
-    for (size_t i = 0; i < g_particles.size(); ++i) {
+    for (size_t i = 0; i < g_data.particles.size(); ++i) {
         std::cout << "Particle " << i + 1 << ": "
-                  << "x = " << g_particles[i].x << ", "
-                  << "y = " << g_particles[i].y << ", "
-                  << "force = " << g_particles[i].force << "\n";
+                  << "x = " << g_data.particles[i].x << ", "
+                  << "y = " << g_data.particles[i].y << ", "
+                  << "force = " << g_data.particles[i].force << "\n";
     }
 }

@@ -13,8 +13,8 @@ void load_data(const std::string file_name) {
     data_buffer = ss.str();
     file.close();
     size_t line_count = std::count(data_buffer.begin(), data_buffer.end(), '\n');
-    g_thread_count = std::min(g_thread_count, line_count);
-    g_particle_limit = std::min(g_particle_limit, line_count);
+    g_config.thread_count = std::min(g_config.thread_count, line_count);
+    g_config.particle_limit = std::min(g_config.particle_limit, line_count);
     populate_dataArray(data_buffer);
     set_chunk_boundaries();
     print_chunk_boundaries();
@@ -26,30 +26,30 @@ void populate_dataArray(const std::string& data_buffer) {
     size_t line_count = 0;
 
     /* Remove trailing \r character if present */
-    while (std::getline(ss, line) && line_count < g_particle_limit) {
+    while (std::getline(ss, line) && line_count < g_config.particle_limit) {
         if (!line.empty() && line.back() == '\r') {
             line.pop_back();
         }
         Particle particle = parseLineToChargePoint(line);
-        g_dataArray.push_back(particle);
+        g_data.particleVector.push_back(particle);
         ++line_count;
     }
 
-    if (g_dataArray.size() <= 1) {
+    if (g_data.particleVector.size() <= 1) {
         throw std::runtime_error("There is only 1 particle!");
     }
 }
 
 /* Helper function to update chunk boundaries */
 void set_chunk_boundaries() {
-    g_particles.resize(g_particle_limit);
-    g_chunk_boundaries.clear();
+    g_data.particles.resize(g_config.particle_limit);
+    g_data.chunk_boundaries.clear();
 
-    size_t avg_lines_per_chunk = g_dataArray.size() / g_thread_count;
-    size_t extra_lines = g_dataArray.size() % g_thread_count;
+    size_t avg_lines_per_chunk = g_data.particleVector.size() / g_config.thread_count;
+    size_t extra_lines = g_data.particleVector.size() % g_config.thread_count;
 
     size_t start_pos = 0;
-    for (size_t i = 0; i < g_thread_count; ++i) {
+    for (size_t i = 0; i < g_config.thread_count; ++i) {
         size_t lines_for_this_chunk = avg_lines_per_chunk;
         if (extra_lines > 0) {
             lines_for_this_chunk++;
@@ -58,21 +58,21 @@ void set_chunk_boundaries() {
 
         size_t end_pos = start_pos + lines_for_this_chunk;
 
-        g_chunk_boundaries.push_back({start_pos, end_pos});
+        g_data.chunk_boundaries.push_back({start_pos, end_pos});
         start_pos = end_pos;
     }
     /* Pad inf particle at beginning and end for easy computing */
     Particle max_p = Particle(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
-    g_dataArray.push_front(max_p);
-    g_dataArray.push_back(max_p);
+    g_data.particleVector.push_front(max_p);
+    g_data.particleVector.push_back(max_p);
 }
 
 void print_chunk_boundaries() {
     std::string log = "Chunk Boundaries:\n";
-    for (size_t i = 0; i < g_chunk_boundaries.size(); ++i) {
+    for (size_t i = 0; i < g_data.chunk_boundaries.size(); ++i) {
         log += "Chunk " + std::to_string(i) + ": Start = " +
-                      std::to_string(g_chunk_boundaries[i].first) + ", End = " +
-                      std::to_string(g_chunk_boundaries[i].second) + "\n";
+                      std::to_string(g_data.chunk_boundaries[i].first) + ", End = " +
+                      std::to_string(g_data.chunk_boundaries[i].second) + "\n";
     }
     M_log(log.c_str());
 }

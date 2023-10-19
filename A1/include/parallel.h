@@ -2,8 +2,10 @@
 #include <iostream>
 #include <vector>
 #include <thread>
+#include "global.h"
 
-extern size_t g_thread_count;
-extern std::vector<std::pair<size_t, size_t>> g_chunk_boundaries;
+extern GlobalConfig g_config;
+extern GlobalData g_data;
 
+void parallel_threading();
 void parallel_processing();
