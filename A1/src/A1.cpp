@@ -14,6 +14,9 @@
 
 GlobalConfig g_config;
 GlobalData g_data;
+
+void report_result(std::chrono::microseconds duration);
+
 int main(int argc, char** argv) {
     M_assert(argc == 3 || argc == 4, "Usage: %s <mode> <thread_count> (optional)<particle_limit>", argv[0]);
 
@@ -33,18 +36,14 @@ int main(int argc, char** argv) {
     }
 
     MPI_Init(&argc, &argv);
-    int world_size;
-    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-    if (world_size > 1 && mode != 3) {
+    MPI_Comm_size(MPI_COMM_WORLD, &g_config.process_count);
+    if (g_config.process_count > 1 && mode != 3) {
         MPI_Finalize();
         M_assert(mode == 3 , "Only mode 3 supports MPI!");
     }
-
-    g_config.process_count = world_size;
-    // unsigned int n = std::thread::hardware_concurrency();
-    // std::cout << "Number of cores: " << n << std::endl;
     const std::string file_name = "data/huge.csv";
     load_data(file_name);
+
     auto start = std::chrono::high_resolution_clock::now();
     switch (mode) {
         case 1:
@@ -59,11 +58,11 @@ int main(int argc, char** argv) {
 
         case 3:
             /* Get the rank of the process */
-            int world_rank;
-            MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+            MPI_Comm_rank(MPI_COMM_WORLD, &g_config.world_rank);
 
             /* Print off a hello world message */
-            std::cout << "Hello world from rank " << world_rank << " out of " << world_size << " processes.\n";
+            std::cout << "Hello world from rank " << g_config.world_rank << " out of "
+                << g_config.process_count << " processes.\n";
 
             M_log("Running in mode 3");
             break;
@@ -72,14 +71,20 @@ int main(int argc, char** argv) {
             return 1;
     }
     auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    std::cout << "Mode " << mode << " with " << g_config.thread_count <<
-        (g_config.thread_count > 1 ? " threads " : " thread ")
-        << "executed in " <<  duration.count() << " microseconds for "
-        << g_config.particle_limit << " particles." << std::endl;
-    M_log("Mode%d executed in %ld microseconds", mode, duration.count());
-    printParticles();
+    std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    report_result(duration);
     /* Finalize the MPI environment */
     MPI_Finalize();
     return 0;
+}
+
+void report_result(std::chrono::microseconds duration) {
+    if(g_config.mode != 3) {
+        std::cout << "Mode " << g_config.mode << " with " << g_config.thread_count <<
+            (g_config.thread_count > 1 ? " threads " : " thread ")
+            << "executed in " <<  duration.count() << " microseconds for "
+            << g_config.particle_limit << " particles." << std::endl;
+        M_log("Mode%d executed in %ld microseconds", g_config.mode, duration.count());
+        printParticles();
+    }
 }

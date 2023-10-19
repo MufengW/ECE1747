@@ -1,4 +1,5 @@
 #include "data_processor.h"
+#include <chrono>
 
 void populate_dataArray(const std::string& data_buffer);
 void set_chunk_boundaries();
@@ -15,9 +16,13 @@ void load_data(const std::string file_name) {
     size_t line_count = std::count(data_buffer.begin(), data_buffer.end(), '\n');
     g_config.thread_count = std::min(g_config.thread_count, line_count);
     g_config.particle_limit = std::min(g_config.particle_limit, line_count);
+
     populate_dataArray(data_buffer);
+
     set_chunk_boundaries();
+#ifdef DEBUG
     print_chunk_boundaries();
+#endif
 }
 
 void populate_dataArray(const std::string& data_buffer) {
@@ -61,10 +66,12 @@ void set_chunk_boundaries() {
         g_data.chunk_boundaries.push_back({start_pos, end_pos});
         start_pos = end_pos;
     }
-    /* Pad inf particle at beginning and end for easy computing */
-    Particle max_p = Particle(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
-    g_data.particleVector.push_front(max_p);
-    g_data.particleVector.push_back(max_p);
+    if(g_config.mode != 3) {
+        /* Pad inf particle at beginning and end for easy computing */
+        Particle max_p = Particle(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
+        g_data.particleVector.push_front(max_p);
+        g_data.particleVector.push_back(max_p);
+    }
 }
 
 void print_chunk_boundaries() {

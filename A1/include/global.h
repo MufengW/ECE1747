@@ -12,7 +12,8 @@ struct GlobalConfig {
     size_t thread_count = 1;
     size_t particle_limit = std::numeric_limits<size_t>::max();
     int mode;
-    size_t process_count = 1;
+    int process_count = 1;
+    int world_rank;
 };
 
 struct GlobalData {

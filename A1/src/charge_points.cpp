@@ -55,7 +55,7 @@ void compute_and_print_force(std::pair<size_t, size_t> boundary, int thread_id) 
         p_next = g_data.particleVector[i+1];
         double force = compute_force(p, p_prev, p_next);
         g_data.particles[i - 1] = ParticleInfo(p, force);
-#ifdef DEBUG_MODE
+#ifdef DEBUG
         print_result(p,force, thread_id);
 #endif
     }
