@@ -30,7 +30,9 @@ Particle parseLineToChargePoint(const std::string& line) {
 
     int x_val = std::stod(tokens[0]);
     int y_val = std::stod(tokens[1]);
-    return Particle(x_val, y_val);
+
+    /* particle id unset yet. */
+    return Particle(-1, x_val, y_val);
 }
 
 void print_result(const Particle& p, double force, int thread_id) {
@@ -54,19 +56,38 @@ void compute_and_print_force(std::pair<size_t, size_t> boundary, int thread_id) 
         p_prev = g_data.particleVector[i-1];
         p_next = g_data.particleVector[i+1];
         double force = compute_force(p, p_prev, p_next);
-        g_data.particles[i - 1] = ParticleInfo(p, force);
+        g_data.particles[p.id] = ParticleInfo(p, force);
 #ifdef DEBUG
         print_result(p,force, thread_id);
 #endif
     }
 }
 
+void compute_and_print_force2(const std::vector<Particle>& sub_chunk, int thread_id) {
+    /* Loop through the sub-chunk, skipping the first and last elements */
+    for (size_t i = 1; i < sub_chunk.size() - 1; ++i) {
+        Particle p = sub_chunk[i];
+        Particle p_prev = sub_chunk[i - 1];
+        Particle p_next = sub_chunk[i + 1];
+
+        /* Compute the force */
+        double force = compute_force(p, p_prev, p_next);
+        int index = p.id + 1 - g_config.start_pos;
+        g_data.particles[index] = ParticleInfo(p, force);
+#ifdef DEBUG
+        print_result(p, force, thread_id);
+#endif
+    }
+}
+
+
 void printParticles() {
-    std::cout << "Printing particle information:\n";
     for (size_t i = 0; i < g_data.particles.size(); ++i) {
-        std::cout << "Particle " << i + 1 << ": "
-                  << "x = " << g_data.particles[i].x << ", "
-                  << "y = " << g_data.particles[i].y << ", "
-                  << "force = " << g_data.particles[i].force << "\n";
+        ParticleInfo p_info = g_data.particles[i];
+        std::cout << " Particle " << p_info.id
+            << " x = " << p_info.x << ", "
+            << "y = " << p_info.y << ", "
+            << "force = " << p_info.force << std::endl;
+        std::cout.flush();
     }
 }

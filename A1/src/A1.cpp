@@ -1,21 +1,14 @@
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-function-type"
-
-#include <mpi.h>
-
-#pragma GCC diagnostic pop
-
 #include "global.h"
 #include "log.h"
 #include "data_processor.h"
 #include "charge_points.h"
 #include "parallel.h"
-#include <chrono>
+#include <functional>
 
 GlobalConfig g_config;
 GlobalData g_data;
 
-void report_result(std::chrono::microseconds duration);
+void report_result();
 
 int main(int argc, char** argv) {
     M_assert(argc == 3 || argc == 4, "Usage: %s <mode> <thread_count> (optional)<particle_limit>", argv[0]);
@@ -45,46 +38,75 @@ int main(int argc, char** argv) {
     load_data(file_name);
 
     auto start = std::chrono::high_resolution_clock::now();
-    switch (mode) {
-        case 1:
+    switch (g_config.mode) {
+        case 1: {
             M_log("Running in mode 1");
             compute_and_print_force(g_data.chunk_boundaries[0], 1);
             break;
+        }
 
-        case 2:
+        case 2: {
             M_log("Running in mode 2");
             parallel_threading();
             break;
+        }
 
-        case 3:
-            /* Get the rank of the process */
-            MPI_Comm_rank(MPI_COMM_WORLD, &g_config.world_rank);
-
-            /* Print off a hello world message */
-            std::cout << "Hello world from rank " << g_config.world_rank << " out of "
-                << g_config.process_count << " processes.\n";
-
+        case 3: {
             M_log("Running in mode 3");
+            parallel_processing();
             break;
-        default:
+        }
+        default: {
             M_log("Invalid mode specified: %d", mode);
             return 1;
+        }
     }
     auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    report_result(duration);
+    g_data.duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    report_result();
     /* Finalize the MPI environment */
     MPI_Finalize();
     return 0;
 }
 
-void report_result(std::chrono::microseconds duration) {
-    if(g_config.mode != 3) {
-        std::cout << "Mode " << g_config.mode << " with " << g_config.thread_count <<
-            (g_config.thread_count > 1 ? " threads " : " thread ")
-            << "executed in " <<  duration.count() << " microseconds for "
-            << g_config.particle_limit << " particles." << std::endl;
-        M_log("Mode%d executed in %ld microseconds", g_config.mode, duration.count());
+void report_time() {
+    if (g_config.mode == 3) {
+        std::cout << "Process #" << g_config.world_rank << std::endl;
+    }
+    std::cout << "Mode " << g_config.mode << " with " << g_config.thread_count <<
+        (g_config.thread_count > 1 ? " threads " : " thread ")
+        << "executed in " <<  g_data.duration.count() << " microseconds for "
+        << g_config.particle_limit << " particles." << std::endl;
+    M_log("Mode%d executed in %ld microseconds", g_config.mode, g_data.duration.count());
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+}
+
+void synchronized_execution(std::function<void()> func_to_execute) {
+    int dummy = 0;
+    if (g_config.world_rank == 0) {
+        /* Process 0 executes first */
+        func_to_execute();
+        /* Send a message to the next process to let it execute */
+        MPI_Send(&dummy, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
+    } else {
+        /* Wait for a message from the previous process before executing */
+        MPI_Recv(&dummy, 1, MPI_INT, g_config.world_rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        func_to_execute();
+        /* Send a message to the next process to let it execute */
+        if (g_config.world_rank < g_config.process_count - 1) {
+            MPI_Send(&dummy, 1, MPI_INT, g_config.world_rank + 1, 0, MPI_COMM_WORLD);
+        }
+    }
+}
+
+void report_result() {
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (g_config.mode != 3) {
+        report_time();
         printParticles();
+    } else {
+        synchronized_execution(report_time);
+        MPI_Barrier(MPI_COMM_WORLD);
+        synchronized_execution(printParticles);
     }
 }

@@ -57,11 +57,12 @@ fi
 # Print the first line of 1.out and 2.out
 head -n 1 1.out
 head -n 1 2.out
-head -n 1 3.out
+head -n $((2 * num_process)) 3.out
 
-tail -n +3 1.out > result1.out
-tail -n +3 2.out > result2.out
-tail -n +3 3.out > result3.out
+# Save the remaining lines to result*.out files
+grep 'Particle .* x = .* y = .* force = .*' 1.out | sort -k2 -n > result1.out
+grep 'Particle .* x = .* y = .* force = .*' 2.out | sort -k2 -n > result2.out
+grep 'Particle .* x = .* y = .* force = .*' 3.out | sort -k2 -n > result3.out
 
 # Testing mode 2
 if diff -q result1.out result2.out >/dev/null; then
