@@ -13,9 +13,19 @@
 #pragma GCC diagnostic pop
 
 
-/* Forward declarations */
-struct Particle;
-struct ParticleInfo;
+struct Particle {
+    int id;
+    int x;
+    int y;
+    Particle() : id(-1), x(0), y(0) {}
+    Particle(int id_val, int x_val, int y_val) : id(id_val), x(x_val), y(y_val) {}
+};
+
+struct ParticleInfo : Particle {
+    double force;
+    ParticleInfo() : Particle(), force(0.0) {}
+    ParticleInfo(Particle p, double f_val) : Particle(p.id, p.x, p.y), force(f_val) {}
+};
 
 struct GlobalConfig {
     size_t thread_count = 1;
