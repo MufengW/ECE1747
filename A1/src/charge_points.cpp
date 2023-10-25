@@ -3,16 +3,10 @@
 #include <cmath>
 #include <thread>
 #include <sstream>
-double distance(const Particle& p1, const Particle& p2) {
-    double dx = (p1.x - p2.x) * angstromToMeter;
-    double dy = (p1.y - p2.y) * angstromToMeter;
-    return std::sqrt(std::pow(dx,2) + std::pow(dy,2));
-}
 
-double compute_force(const Particle& p, const Particle& p_prev, const Particle& p_next) {
-    double dist = std::min(distance(p, p_prev), distance(p, p_next));
-    return k * std::pow(q,2) / std::pow(dist,2);
-}
+double distance(const Particle& p1, const Particle& p2);
+double compute_force(const Particle& p, const Particle& p_prev, const Particle& p_next);
+void log_result(const Particle& p, double force, int thread_id);
 
 Particle parseLineToChargePoint(const std::string& line) {
     std::stringstream ss(line);
@@ -23,7 +17,7 @@ Particle parseLineToChargePoint(const std::string& line) {
         tokens.push_back(token);
     }
 
-    /* Ensure the line has the correct format: "double,double,char" */
+    /* Ensure the line has the correct format: "int,int,char" */
     M_assert(tokens.size() == 3, "Line format is incorrect.");
     M_assert(!tokens[0].empty() && !tokens[1].empty() && tokens[2].size() == 1,
         "Line content does not match expected format.");
@@ -33,18 +27,6 @@ Particle parseLineToChargePoint(const std::string& line) {
 
     /* particle id unset yet. */
     return Particle(-1, x_val, y_val);
-}
-
-void print_result(const Particle& p, double force, int thread_id) {
-    char output_buffer[256];
-    snprintf(output_buffer, sizeof(output_buffer),
-             "Thread ID: %d, %d %d force = %e",
-             thread_id,
-             p.x,
-             p.y,
-             force);
-
-    M_log(output_buffer);
 }
 
 void compute_and_print_force(std::pair<size_t, size_t> boundary, int thread_id) {
@@ -58,7 +40,7 @@ void compute_and_print_force(std::pair<size_t, size_t> boundary, int thread_id) 
         double force = compute_force(p, p_prev, p_next);
         g_data.particles[p.id] = ParticleInfo(p, force);
 #ifdef DEBUG
-        print_result(p,force, thread_id);
+        log_result(p,force, thread_id);
 #endif
     }
 }
@@ -75,11 +57,10 @@ void compute_and_print_force2(const std::vector<Particle>& sub_chunk, int thread
         int index = p.id + 1 - g_config.start_pos;
         g_data.particles[index] = ParticleInfo(p, force);
 #ifdef DEBUG
-        print_result(p, force, thread_id);
+        log_result(p, force, thread_id);
 #endif
     }
 }
-
 
 void printParticles() {
     for (size_t i = 0; i < g_data.particles.size(); ++i) {
@@ -90,4 +71,27 @@ void printParticles() {
             << "force = " << p_info.force << std::endl;
         std::cout.flush();
     }
+}
+
+double distance(const Particle& p1, const Particle& p2) {
+    double dx = (p1.x - p2.x) * angstromToMeter;
+    double dy = (p1.y - p2.y) * angstromToMeter;
+    return std::sqrt(std::pow(dx,2) + std::pow(dy,2));
+}
+
+double compute_force(const Particle& p, const Particle& p_prev, const Particle& p_next) {
+    double dist = std::min(distance(p, p_prev), distance(p, p_next));
+    return k * std::pow(q,2) / std::pow(dist,2);
+}
+
+void log_result(const Particle& p, double force, int thread_id) {
+    char output_buffer[256];
+    snprintf(output_buffer, sizeof(output_buffer),
+             "Thread ID: %d, %d %d force = %e",
+             thread_id,
+             p.x,
+             p.y,
+             force);
+
+    M_log(output_buffer);
 }

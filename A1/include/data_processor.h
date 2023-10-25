@@ -11,4 +11,6 @@
 
 extern GlobalConfig g_config;
 extern GlobalData g_data;
-void load_data(const std::string filen_name);
+
+/* Load data from a file and populate the global data structures */
+void load_data(const std::string file_name);

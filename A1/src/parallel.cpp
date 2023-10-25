@@ -45,7 +45,7 @@ void parallel_processing() {
     std::vector<std::thread> threads;
 
     /* Create worker threads */
-    for (int i = 0; i < 16; ++i) {
+    for (int i = 0; i < g_config.thread_count; ++i) {
         threads.push_back(std::thread(worker_thread, i));
     }
 
