@@ -8,11 +8,15 @@ std::mutex queue_mutex;  /* Mutex for synchronizing access to the queue */
 
 void parallel_threading() {
     std::vector<std::thread> threads;
-    size_t chunk_size = g_data.chunk_boundaries.size();
+    size_t chunk_size = g_data.chunk_boundary_map.size();
     M_assert(g_config.thread_count == chunk_size,
         "Mismatch on thread number (%ld) and chunk size (%ld)!", g_config.thread_count, chunk_size);
     for (size_t i = 0; i < chunk_size; ++i) {
-        threads.push_back(std::thread(compute_and_print_force, g_data.chunk_boundaries[i]));
+        std::pair<size_t, size_t> boundary = g_data.chunk_boundary_map[i];
+        size_t start = boundary.first;
+        size_t end = boundary.second;
+        std::vector<Particle> sub_chunk(g_data.particle_list.begin() + start, g_data.particle_list.begin() + end + 2);
+        threads.push_back(std::thread(computeAndStoreForce, sub_chunk));
     }
 
     /* Join all threads */
@@ -29,15 +33,15 @@ void worker_thread() {
         /* Critical section: Dequeue a sub-chunk */
         {
             std::lock_guard<std::mutex> lock(queue_mutex);
-            if (g_data.particleQueue.empty()) {
+            if (g_data.particle_queue.empty()) {
                 break;  /* No more work to do */
             }
-            current_sub_chunk = g_data.particleQueue.front();
-            g_data.particleQueue.pop();
+            current_sub_chunk = g_data.particle_queue.front();
+            g_data.particle_queue.pop();
         }
 
         /* Process the sub-chunk */
-        compute_and_print_force2(current_sub_chunk);
+        computeAndStoreForce(current_sub_chunk);
     }
 }
 

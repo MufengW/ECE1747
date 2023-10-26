@@ -76,10 +76,10 @@ Holds global data used in the simulation.
 
 ```cpp
 struct GlobalData {
-    std::deque<Particle> particleVector;
+    std::deque<Particle> particle_list;
     std::vector<std::pair<size_t, size_t>> chunk_boundaries;
     std::vector<ParticleInfo> particles;
-    std::queue<std::vector<Particle>> particleQueue;
+    std::queue<std::vector<Particle>> particle_queue;
     std::chrono::microseconds duration;
 }
 ```

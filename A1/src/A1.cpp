@@ -20,14 +20,18 @@ int main(int argc, char** argv) {
 
     /* Load data from file */
     const std::string file_name = "data/huge.csv";
-    load_data(file_name);
+    loadData(file_name);
 
     /* Record the start time */
     auto start = std::chrono::high_resolution_clock::now();
 
     /* Execute the appropriate mode */
     switch (g_config.mode) {
-        case 1: compute_and_print_force(g_data.chunk_boundaries[0]); break;
+        case 1: {
+            std::vector<Particle> particles(g_data.particle_list.begin(), g_data.particle_list.end());
+            computeAndStoreForce(particles);
+            break;
+        }
         case 2: parallel_threading(); break;
         case 3: parallel_processing(); break;
         default: M_log("Invalid mode specified: %d", g_config.mode); return 1;
@@ -147,10 +151,10 @@ void report_result() {
     MPI_Barrier(MPI_COMM_WORLD);
     if (g_config.mode != 3) {
         report_time();
-        printParticles();
+        printParticleInfo();
     } else {
         synchronized_execution(report_time);
         MPI_Barrier(MPI_COMM_WORLD);
-        synchronized_execution(printParticles);
+        synchronized_execution(printParticleInfo);
     }
 }

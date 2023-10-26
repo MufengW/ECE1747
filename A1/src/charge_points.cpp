@@ -29,23 +29,7 @@ Particle parseLineToChargePoint(const std::string& line) {
     return Particle(-1, x_val, y_val);
 }
 
-void compute_and_print_force(std::pair<size_t, size_t> boundary) {
-    Particle p, p_prev, p_next;
-    size_t start = boundary.first;
-    size_t end = boundary.second;
-    for (size_t i = start + 1; i < end + 1; ++i) {
-        p = g_data.particleVector[i];
-        p_prev = g_data.particleVector[i-1];
-        p_next = g_data.particleVector[i+1];
-        double force = compute_force(p, p_prev, p_next);
-        g_data.particles[p.id] = ParticleInfo(p, force);
-#ifdef DEBUG
-        log_result(p,force);
-#endif
-    }
-}
-
-void compute_and_print_force2(const std::vector<Particle>& sub_chunk) {
+void computeAndStoreForce(const std::vector<Particle>& sub_chunk) {
     /* Loop through the sub-chunk, skipping the first and last elements */
     for (size_t i = 1; i < sub_chunk.size() - 1; ++i) {
         Particle p = sub_chunk[i];
@@ -55,16 +39,16 @@ void compute_and_print_force2(const std::vector<Particle>& sub_chunk) {
         /* Compute the force */
         double force = compute_force(p, p_prev, p_next);
         int index = p.id + 1 - g_config.start_pos;
-        g_data.particles[index] = ParticleInfo(p, force);
+        g_data.particle_info_list[index] = ParticleInfo(p, force);
 #ifdef DEBUG
         log_result(p, force);
 #endif
     }
 }
 
-void printParticles() {
-    for (size_t i = 0; i < g_data.particles.size(); ++i) {
-        ParticleInfo p_info = g_data.particles[i];
+void printParticleInfo() {
+    for (size_t i = 0; i < g_data.particle_info_list.size(); ++i) {
+        ParticleInfo p_info = g_data.particle_info_list[i];
         std::cout << " Particle " << p_info.id
             << " x = " << p_info.x << ", "
             << "y = " << p_info.y << ", "

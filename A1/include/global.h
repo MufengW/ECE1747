@@ -33,14 +33,14 @@ struct GlobalConfig {
     int mode;
     int process_count = 1;
     int world_rank;
-    size_t start_pos;  /* Start position for the current process in mode 3 */
+    size_t start_pos = 1;  /* Start position for the current process in mode 3 */
     size_t end_pos;    /* End position for the current process in mode 3 */
 };
 
 struct GlobalData {
-    std::deque<Particle> particleVector;
-    std::vector<std::pair<size_t, size_t>> chunk_boundaries;
-    std::vector<ParticleInfo> particles;
-    std::queue<std::vector<Particle>> particleQueue; /* Queue to hold smaller chunks of particles */
+    std::deque<Particle> particle_list;
+    std::vector<std::pair<size_t, size_t>> chunk_boundary_map;
+    std::vector<ParticleInfo> particle_info_list;
+    std::queue<std::vector<Particle>> particle_queue; /* Queue to hold smaller chunks of particles */
     std::chrono::microseconds duration = std::chrono::microseconds(0);
 };

@@ -1,7 +1,7 @@
 #include "data_processor.h"
 #include <chrono>
 
-/* Populate the particleVector from the data buffer */
+/* Populate the particle_list from the data buffer */
 void populate_dataArray(const std::string& data_buffer);
 
 /* Set the boundaries for each chunk of data */
@@ -10,8 +10,8 @@ void set_chunk_boundaries();
 /* Populate the particle queue for mode 3 */
 void populate_particle_queue();
 
-/* Load data from a file into the data buffer and then into the particleVector */
-void load_data(const std::string file_name) {
+/* Load data from a file into the data buffer and then into the particle_list */
+void loadData(const std::string file_name) {
     std::string data_buffer;
     std::ifstream file(file_name);
     std::stringstream ss;
@@ -33,7 +33,7 @@ void load_data(const std::string file_name) {
     }
 }
 
-/* Populate the particleVector from the data buffer */
+/* Populate the particle_list from the data buffer */
 void populate_dataArray(const std::string& data_buffer) {
     std::stringstream ss(data_buffer);
     std::string line;
@@ -46,15 +46,15 @@ void populate_dataArray(const std::string& data_buffer) {
             line.pop_back();
         }
 
-        /* Parse the line to create a Particle object and add it to particleVector */
+        /* Parse the line to create a Particle object and add it to particle_list */
         Particle particle = parseLineToChargePoint(line);
         particle.id = line_count;
-        g_data.particleVector.push_back(particle);
+        g_data.particle_list.push_back(particle);
 
         ++line_count;
     }
 
-    if (g_data.particleVector.size() <= 1) {
+    if (g_data.particle_list.size() <= 1) {
         throw std::runtime_error("There is only 1 particle!");
     }
 }
@@ -65,15 +65,15 @@ void set_chunk_boundaries() {
     size_t num_units = (g_config.mode != 3) ? g_config.thread_count : g_config.process_count;
 
     /* Calculate the average number of lines per chunk and any extra lines */
-    size_t avg_lines_per_chunk = g_data.particleVector.size() / num_units;
-    size_t extra_lines = g_data.particleVector.size() % num_units;
+    size_t avg_lines_per_chunk = g_data.particle_list.size() / num_units;
+    size_t extra_lines = g_data.particle_list.size() % num_units;
 
     /* Handle mode-specific logic for setting chunk boundaries */
     if (g_config.mode != 3) {
         /* Resize the particles vector based on the particle limit */
-        g_data.particles.resize(g_config.particle_limit);
+        g_data.particle_info_list.resize(g_config.particle_limit);
         /* Clear any existing chunk boundaries */
-        g_data.chunk_boundaries.clear();
+        g_data.chunk_boundary_map.clear();
 
         start_pos = 0;
         /* Loop through each computational unit to set its boundaries */
@@ -87,7 +87,7 @@ void set_chunk_boundaries() {
 
             end_pos = start_pos + lines_for_this_chunk;
             /* Add the boundaries to the chunk_boundaries vector */
-            g_data.chunk_boundaries.push_back({start_pos, end_pos});
+            g_data.chunk_boundary_map.push_back({start_pos, end_pos});
             start_pos = end_pos;
         }
     } else {
@@ -106,13 +106,13 @@ void set_chunk_boundaries() {
         g_config.start_pos += 1;
         g_config.end_pos += 1;
         /* Resize the particles vector for this process */
-        g_data.particles.resize(g_config.end_pos - g_config.start_pos);
+        g_data.particle_info_list.resize(g_config.end_pos - g_config.start_pos);
     }
 
-    /* Add padding particles to the particleVector for easier computation */
+    /* Add padding particles to the particle_list for easier computation */
     Particle max_p = Particle(-1, std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
-    g_data.particleVector.push_front(max_p);
-    g_data.particleVector.push_back(max_p);
+    g_data.particle_list.push_front(max_p);
+    g_data.particle_list.push_back(max_p);
 }
 
 /* Populate the particle queue with sub-chunks of particles for parallel processing */
@@ -143,53 +143,10 @@ void populate_particle_queue() {
         size_t overlap_end = end + 1;
 
         /* Create a sub-chunk with the overlapping particles */
-        std::vector<Particle> sub_chunk(g_data.particleVector.begin() + overlap_start,
-            g_data.particleVector.begin() + overlap_end + 1);
+        std::vector<Particle> sub_chunk(g_data.particle_list.begin() + overlap_start,
+            g_data.particle_list.begin() + overlap_end + 1);
 
         /* Add the sub-chunk to the particle queue */
-        g_data.particleQueue.push(sub_chunk);
+        g_data.particle_queue.push(sub_chunk);
     }
-}
-
-void print_chunk_boundaries() {
-    std::string log = "Chunk Boundaries:\n";
-    for (size_t i = 0; i < g_data.chunk_boundaries.size(); ++i) {
-        log += "Chunk " + std::to_string(i) + ": Start = " +
-                      std::to_string(g_data.chunk_boundaries[i].first) + ", End = " +
-                      std::to_string(g_data.chunk_boundaries[i].second) + "\n";
-    }
-    M_log(log.c_str());
-}
-
-void print_particle_queue() {
-    /* Check if the mode is not 3, then return */
-    if (g_config.mode != 3) return;
-
-    /* Print the entire particleVector first from start_pos to end_pos */
-    std::cout << "\nEntire particleVector for process" << g_config.world_rank << ":\n";
-    for (size_t i = g_config.start_pos; i < g_config.end_pos; ++i) {
-        std::cout << "(" << g_data.particleVector[i].x << ", " << g_data.particleVector[i].y << ") ";
-    }
-    std::cout << std::endl;
-
-    /* Create a temporary copy of the queue */
-    std::queue<std::vector<Particle>> tempQueue = g_data.particleQueue;
-
-    /* Now print each chunk */
-    int chunk_count = 1;
-    std::cout << "Individual chunks for process" << g_config.world_rank << ":\n";
-    while (!tempQueue.empty()) {
-        std::vector<Particle> current_chunk = tempQueue.front();
-        tempQueue.pop();
-
-        std::cout << "Chunk " << chunk_count << ":\n";
-
-        for (const auto& particle : current_chunk) {
-            std::cout << "(" << particle.x << ", " << particle.y << ") ";
-        }
-
-        std::cout << std::endl;
-        chunk_count++;
-    }
-    std::cout << std::endl;
 }
