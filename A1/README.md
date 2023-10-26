@@ -63,7 +63,10 @@ struct GlobalConfig {
     size_t thread_count;
     size_t particle_limit;
     int mode;
-    // Other fields
+    int process_count;
+    int world_rank;
+    size_t start_pos;
+    size_t end_pos;
 };
 ```
 
@@ -72,15 +75,13 @@ struct GlobalConfig {
 Holds global data used in the simulation.
 
 ```cpp
-struct GlobalConfig {
-    size_t thread_count;
-    size_t particle_limit;
-    int mode;
-    int process_count;
-    int world_rank;
-    size_t start_pos;
-    size_t end_pos;
-};
+struct GlobalData {
+    std::deque<Particle> particleVector;
+    std::vector<std::pair<size_t, size_t>> chunk_boundaries;
+    std::vector<ParticleInfo> particles;
+    std::queue<std::vector<Particle>> particleQueue;
+    std::chrono::microseconds duration;
+}
 ```
 
 ## Usage
