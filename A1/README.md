@@ -90,11 +90,13 @@ struct GlobalData {
 
 ```bash
 # release mode
+cd A1
 ./build.sh -m release
 ```
 
 ```bash
 # debug mode
+cd A1
 ./build.sh -m debug
 ```
 
@@ -102,13 +104,13 @@ struct GlobalData {
 
 ```bash
 # mode 1 or 2
-build/A1 <mode> <thread_count> [particle_limit]
+cd A1; build/A1 <mode> <thread_count> [particle_limit]
 # or
-mpiexec -np 1 build/A1 <mode> <thread_count> [particle_limit]
+cd A1; mpiexec -np 1 build/A1 <mode> <thread_count> [particle_limit]
 ```
 ```bash
 # mode 3
-mpiexec -np <$num_process> build/A1 3 <thread_count> [particle_limit]
+cd A1; mpiexec -np <$num_process> build/A1 3 <thread_count> [particle_limit]
 ```
 
 - `mode`: The execution mode (1, 2, or 3)
@@ -120,7 +122,7 @@ mpiexec -np <$num_process> build/A1 3 <thread_count> [particle_limit]
 You can run the test cases using the `test.sh` script.
 
 ```bash
-$ ./test.sh [-t <thread_count>] [-l <max_lines>] [-d]
+cd A1; ./test.sh [-t <thread_count>] [-l <max_lines>] [-d]
 ```
 
 - `-t`: Number of threads (default is 16)
