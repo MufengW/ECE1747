@@ -39,7 +39,7 @@ struct Particle {
     int id;
     int x;
     int y;
-    // Constructors
+    /* Constructors */
 };
 ```
 
@@ -50,7 +50,7 @@ Extends `Particle` to include force information.
 ```cpp
 struct ParticleInfo : Particle {
     double force;
-    // Constructors
+    /* Constructors */
 };
 ```
 
@@ -72,10 +72,14 @@ struct GlobalConfig {
 Holds global data used in the simulation.
 
 ```cpp
-struct GlobalData {
-    std::deque<Particle> particleVector;
-    std::vector<ParticleInfo> particles;
-    // Other fields
+struct GlobalConfig {
+    size_t thread_count;
+    size_t particle_limit;
+    int mode;
+    int process_count;
+    int world_rank;
+    size_t start_pos;
+    size_t end_pos;
 };
 ```
 
@@ -84,13 +88,26 @@ struct GlobalData {
 ### Compilation
 
 ```bash
-$ g++ main.cpp -o A1 -lmpi
+# release mode
+./build.sh -m release
+```
+
+```bash
+# debug mode
+./build.sh -m debug
 ```
 
 ### Running the Program
 
 ```bash
-$ ./A1 <mode> <thread_count> [particle_limit]
+# mode 1 or 2
+build/A1 <mode> <thread_count> [particle_limit]
+# or
+mpiexec -np 1 build/A1 <mode> <thread_count> [particle_limit]
+```
+```bash
+# mode 3
+mpiexec -np <$num_process> build/A1 3 <thread_count> [particle_limit]
 ```
 
 - `mode`: The execution mode (1, 2, or 3)
@@ -109,7 +126,3 @@ $ ./test.sh [-t <thread_count>] [-l <max_lines>] [-d]
 - `-l`: Maximum number of lines to read from the CSV file
 - `-d`: Debug mode
 - `-p`: Number of processes for MPI (default is 1)
-
-## Contributing
-
-Feel free to submit pull requests or open issues to improve the project.
