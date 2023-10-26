@@ -12,7 +12,7 @@ void parallel_threading() {
     M_assert(g_config.thread_count == chunk_size,
         "Mismatch on thread number (%ld) and chunk size (%ld)!", g_config.thread_count, chunk_size);
     for (size_t i = 0; i < chunk_size; ++i) {
-        threads.push_back(std::thread(compute_and_print_force, g_data.chunk_boundaries[i], static_cast<int>(i)));
+        threads.push_back(std::thread(compute_and_print_force, g_data.chunk_boundaries[i]));
     }
 
     /* Join all threads */
@@ -22,7 +22,7 @@ void parallel_threading() {
 }
 
 
-void worker_thread(int thread_id) {
+void worker_thread() {
     while (true) {
         std::vector<Particle> current_sub_chunk;
 
@@ -37,7 +37,7 @@ void worker_thread(int thread_id) {
         }
 
         /* Process the sub-chunk */
-        compute_and_print_force2(current_sub_chunk, thread_id);
+        compute_and_print_force2(current_sub_chunk);
     }
 }
 
@@ -45,8 +45,8 @@ void parallel_processing() {
     std::vector<std::thread> threads;
 
     /* Create worker threads */
-    for (int i = 0; i < g_config.thread_count; ++i) {
-        threads.push_back(std::thread(worker_thread, i));
+    for (size_t i = 0; i < g_config.thread_count; ++i) {
+        threads.push_back(std::thread(worker_thread));
     }
 
     /* Join all threads */

@@ -6,7 +6,7 @@
 
 double distance(const Particle& p1, const Particle& p2);
 double compute_force(const Particle& p, const Particle& p_prev, const Particle& p_next);
-void log_result(const Particle& p, double force, int thread_id);
+void log_result(const Particle& p, double force);
 
 Particle parseLineToChargePoint(const std::string& line) {
     std::stringstream ss(line);
@@ -29,7 +29,7 @@ Particle parseLineToChargePoint(const std::string& line) {
     return Particle(-1, x_val, y_val);
 }
 
-void compute_and_print_force(std::pair<size_t, size_t> boundary, int thread_id) {
+void compute_and_print_force(std::pair<size_t, size_t> boundary) {
     Particle p, p_prev, p_next;
     size_t start = boundary.first;
     size_t end = boundary.second;
@@ -40,12 +40,12 @@ void compute_and_print_force(std::pair<size_t, size_t> boundary, int thread_id) 
         double force = compute_force(p, p_prev, p_next);
         g_data.particles[p.id] = ParticleInfo(p, force);
 #ifdef DEBUG
-        log_result(p,force, thread_id);
+        log_result(p,force);
 #endif
     }
 }
 
-void compute_and_print_force2(const std::vector<Particle>& sub_chunk, int thread_id) {
+void compute_and_print_force2(const std::vector<Particle>& sub_chunk) {
     /* Loop through the sub-chunk, skipping the first and last elements */
     for (size_t i = 1; i < sub_chunk.size() - 1; ++i) {
         Particle p = sub_chunk[i];
@@ -57,7 +57,7 @@ void compute_and_print_force2(const std::vector<Particle>& sub_chunk, int thread
         int index = p.id + 1 - g_config.start_pos;
         g_data.particles[index] = ParticleInfo(p, force);
 #ifdef DEBUG
-        log_result(p, force, thread_id);
+        log_result(p, force);
 #endif
     }
 }
@@ -84,11 +84,10 @@ double compute_force(const Particle& p, const Particle& p_prev, const Particle& 
     return k * std::pow(q,2) / std::pow(dist,2);
 }
 
-void log_result(const Particle& p, double force, int thread_id) {
+void log_result(const Particle& p, double force) {
     char output_buffer[256];
     snprintf(output_buffer, sizeof(output_buffer),
-             "Thread ID: %d, %d %d force = %e",
-             thread_id,
+             "%d %d force = %e",
              p.x,
              p.y,
              force);

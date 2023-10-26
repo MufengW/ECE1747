@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
 
     /* Execute the appropriate mode */
     switch (g_config.mode) {
-        case 1: compute_and_print_force(g_data.chunk_boundaries[0], 1); break;
+        case 1: compute_and_print_force(g_data.chunk_boundaries[0]); break;
         case 2: parallel_threading(); break;
         case 3: parallel_processing(); break;
         default: M_log("Invalid mode specified: %d", g_config.mode); return 1;
@@ -62,10 +62,10 @@ void parse_arguments(int argc, char** argv) {
     } else if (g_config.mode == 3) {
         size_t total_thread_count = std::atoi(argv[2]);
         /* Evenly distribute these threads to each process. */
-        M_assert(total_thread_count >= g_config.process_count,
+        M_assert(static_cast<int>(total_thread_count) >= g_config.process_count,
             "Number of threads must not be less than number of MPI process!");
         g_config.thread_count = total_thread_count / g_config.process_count;
-        size_t remaining_threads = total_thread_count % g_config.process_count;
+        int remaining_threads = total_thread_count % g_config.process_count;
         if (g_config.world_rank < remaining_threads) {
             g_config.thread_count += 1;
         }
