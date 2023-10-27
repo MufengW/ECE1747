@@ -10,13 +10,13 @@
 #include "particles.h"
 
 /* Populate the particle_list from the data buffer */
-void populate_dataArray(const std::string& data_buffer);
+void populateParticleList(const std::string& data_buffer);
 
 /* Set the boundaries for each chunk of data */
-void set_chunk_boundaries();
+void setChunkBoundaries();
 
 /* Populate the particle queue for mode 3 */
-void populate_particle_queue();
+void populateParticleQueue();
 
 /* Parses a string line to create and return a Particle type */
 Particle parseLineToChargePoint(const std::string& line);
@@ -35,17 +35,17 @@ void loadData(const std::string file_name) {
     g_config.thread_count = std::min(g_config.thread_count, line_count);
     g_config.particle_limit = std::min(g_config.particle_limit, line_count);
 
-    populate_dataArray(data_buffer);
-    set_chunk_boundaries();
+    populateParticleList(data_buffer);
+    setChunkBoundaries();
 
     /* If in mode 3, populate the particle queue */
     if (g_config.mode == 3){
-        populate_particle_queue();
+        populateParticleQueue();
     }
 }
 
 /* Populate the particle_list from the data buffer */
-void populate_dataArray(const std::string& data_buffer) {
+void populateParticleList(const std::string& data_buffer) {
     std::stringstream ss(data_buffer);
     std::string line;
     size_t line_count = 0;
@@ -71,7 +71,7 @@ void populate_dataArray(const std::string& data_buffer) {
 }
 
 /* Update the boundaries for chunks of data that will be processed in parallel */
-void set_chunk_boundaries() {
+void setChunkBoundaries() {
     size_t start_pos, end_pos;  /* Define the start and end positions for each computational unit */
     size_t num_units = (g_config.mode != 3) ? g_config.thread_count : g_config.process_count;
 
@@ -127,7 +127,7 @@ void set_chunk_boundaries() {
 }
 
 /* Populate the particle queue with sub-chunks of particles for parallel processing */
-void populate_particle_queue() {
+void populateParticleQueue() {
     /* Calculate the total number of particles that the current process will handle */
     size_t particle_num = g_config.end_pos - g_config.start_pos;
 

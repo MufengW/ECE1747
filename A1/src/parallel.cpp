@@ -59,3 +59,25 @@ void parallel_processing() {
         t.join();
     }
 }
+
+/*
+ * Execute a function in a synchronized manner across all MPI processes.
+ * Ensures that the function is executed by one process at a time, in the order of their ranks.
+ */
+void synchronized_execution(std::function<void()> func_to_execute) {
+    int dummy = 0;
+    if (g_config.world_rank == 0) {
+        /* Process 0 executes first */
+        func_to_execute();
+        /* Send a message to the next process to let it execute */
+        MPI_Send(&dummy, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
+    } else {
+        /* Wait for a message from the previous process before executing */
+        MPI_Recv(&dummy, 1, MPI_INT, g_config.world_rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        func_to_execute();
+        /* Send a message to the next process to let it execute */
+        if (g_config.world_rank < g_config.process_count - 1) {
+            MPI_Send(&dummy, 1, MPI_INT, g_config.world_rank + 1, 0, MPI_COMM_WORLD);
+        }
+    }
+}

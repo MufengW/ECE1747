@@ -40,3 +40,5 @@ extern GlobalConfig g_config;
 extern GlobalData g_data;
 
 void printParticleInfo();
+void report_time();
+void report_result();
