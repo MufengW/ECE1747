@@ -1,31 +1,17 @@
 #pragma once
-#include <queue>
-#include <deque>
-#include <vector>
-#include <limits>
-#include <cmath>
 #include <chrono>
+#include <cmath>
+#include <deque>
+#include <limits>
+#include <queue>
+#include <vector>
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-function-type"
-
 #include <mpi.h>
-
 #pragma GCC diagnostic pop
 
-
-struct Particle {
-    int id;
-    int x;
-    int y;
-    Particle() : id(-1), x(0), y(0) {}
-    Particle(int id_val, int x_val, int y_val) : id(id_val), x(x_val), y(y_val) {}
-};
-
-struct ParticleInfo : Particle {
-    double force;
-    ParticleInfo() : Particle(), force(0.0) {}
-    ParticleInfo(Particle p, double f_val) : Particle(p.id, p.x, p.y), force(f_val) {}
-};
+#include "particles.h"
 
 struct GlobalConfig {
     size_t thread_count = 1;

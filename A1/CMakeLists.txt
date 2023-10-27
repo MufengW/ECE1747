@@ -23,9 +23,10 @@ endif()
 # Add source files to the executable
 add_executable(A1
     src/A1.cpp
-    src/charge_points.cpp
     src/data_processor.cpp
     src/parallel.cpp
+    src/computation.cpp
+    src/log.cpp
 )
 
 # Find required packages

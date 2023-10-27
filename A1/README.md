@@ -16,7 +16,7 @@ This project simulates the behavior of charged particles in a 2D space and calcu
 ## Files
 
 - `A1.cpp`: Main program file.
-- `charge_points.cpp`: Handles the charge points in the simulation.
+- `particles.cpp`: Handles the charge points in the simulation.
 - `data_processor.cpp`: Processes the data for the simulation.
 - `parallel.cpp`: Contains parallelization logic.
 
@@ -26,7 +26,7 @@ This project simulates the behavior of charged particles in a 2D space and calcu
 - `log.h`: Logging utilities.
 - `global.h`: Contains global configuration and data structures.
 - `data_processor.h`: Header for data processing functions.
-- `charge_points.h`: Header for charge points functions.
+- `particles.h`: Header for charge points functions.
 
 ## Data Structures
 

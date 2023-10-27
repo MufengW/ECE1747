@@ -1,7 +1,8 @@
 #include <mutex>
 
 #include "parallel.h"
-#include "charge_points.h"
+#include "particles.h"
+#include "computation.h"
 #include "log.h"
 
 std::mutex queue_mutex;  /* Mutex for synchronizing access to the queue */
@@ -16,7 +17,7 @@ void parallel_threading() {
         size_t start = boundary.first;
         size_t end = boundary.second;
         std::vector<Particle> sub_chunk(g_data.particle_list.begin() + start, g_data.particle_list.begin() + end + 2);
-        threads.push_back(std::thread(computeAndStoreForce, sub_chunk));
+        threads.push_back(std::thread(batchComputeAndStoreParticleForces, sub_chunk));
     }
 
     /* Join all threads */
@@ -41,7 +42,7 @@ void worker_thread() {
         }
 
         /* Process the sub-chunk */
-        computeAndStoreForce(current_sub_chunk);
+        batchComputeAndStoreParticleForces(current_sub_chunk);
     }
 }
 

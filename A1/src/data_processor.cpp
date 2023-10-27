@@ -1,5 +1,13 @@
 #include "data_processor.h"
+#include <algorithm>
 #include <chrono>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+#include "log.h"
+#include "particles.h"
 
 /* Populate the particle_list from the data buffer */
 void populate_dataArray(const std::string& data_buffer);
@@ -9,6 +17,9 @@ void set_chunk_boundaries();
 
 /* Populate the particle queue for mode 3 */
 void populate_particle_queue();
+
+/* Parses a string line to create and return a Particle type */
+Particle parseLineToChargePoint(const std::string& line);
 
 /* Load data from a file into the data buffer and then into the particle_list */
 void loadData(const std::string file_name) {
@@ -149,4 +160,25 @@ void populate_particle_queue() {
         /* Add the sub-chunk to the particle queue */
         g_data.particle_queue.push(sub_chunk);
     }
+}
+
+Particle parseLineToChargePoint(const std::string& line) {
+    std::stringstream ss(line);
+    std::string token;
+    std::vector<std::string> tokens;
+
+    while (std::getline(ss, token, ',')) {
+        tokens.push_back(token);
+    }
+
+    /* Ensure the line has the correct format: "int,int,char" */
+    M_assert(tokens.size() == 3, "Line format is incorrect.");
+    M_assert(!tokens[0].empty() && !tokens[1].empty() && tokens[2].size() == 1,
+        "Line content does not match expected format.");
+
+    int x_val = std::stod(tokens[0]);
+    int y_val = std::stod(tokens[1]);
+
+    /* particle id unset yet. */
+    return Particle(-1, x_val, y_val);
 }

@@ -1,10 +1,11 @@
 #include "global.h"
 #include "log.h"
 #include "data_processor.h"
-#include "charge_points.h"
+#include "particles.h"
 #include "parallel.h"
-#include <functional>
+#include "computation.h"
 #include <cstdlib>
+#include <functional>
 
 GlobalConfig g_config;
 GlobalData g_data;
@@ -29,7 +30,7 @@ int main(int argc, char** argv) {
     switch (g_config.mode) {
         case 1: {
             std::vector<Particle> particles(g_data.particle_list.begin(), g_data.particle_list.end());
-            computeAndStoreForce(particles);
+            batchComputeAndStoreParticleForces(particles);
             break;
         }
         case 2: parallel_threading(); break;
