@@ -10,8 +10,10 @@ GlobalConfig g_config;
 GlobalData g_data;
 
 void parseArguments(int argc, char** argv);
+#ifdef USE_MPI
 void initializeMPI(int argc, char** argv);
 void finalizeMPI();
+#endif
 
 int main(int argc, char** argv) {
     /* Parse command-line arguments */
@@ -32,7 +34,9 @@ int main(int argc, char** argv) {
             break;
         }
         case 2: parallel_threading(); break;
+#ifdef USE_MPI
         case 3: parallel_processing(); break;
+#endif
         default: M_log("Invalid mode specified: %d", g_config.mode); return 1;
     }
 
@@ -43,8 +47,10 @@ int main(int argc, char** argv) {
     /* Report the results */
     report_result();
 
+#ifdef USE_MPI
     /* Finalize MPI environment */
     finalizeMPI();
+#endif
 
     return 0;
 }
@@ -57,12 +63,15 @@ void parseArguments(int argc, char** argv) {
     g_config.mode = std::atoi(argv[1]);
     M_assert(g_config.mode <= 3 && g_config.mode >= 1, "mode has to be an integer between 1 to 3!");
 
+#ifdef USE_MPI
     initializeMPI(argc, argv);
+#endif
 
     if (g_config.mode == 2) {
         g_config.thread_count = std::atoi(argv[2]);
         M_log("thread_count = %ld", g_config.thread_count);
     } else if (g_config.mode == 3) {
+#ifdef USE_MPI
         size_t total_thread_count = std::atoi(argv[2]);
         /* Evenly distribute these threads to each process. */
         M_assert(static_cast<int>(total_thread_count) >= g_config.process_count,
@@ -72,6 +81,7 @@ void parseArguments(int argc, char** argv) {
         if (g_config.world_rank < remaining_threads) {
             g_config.thread_count += 1;
         }
+#endif
     } else {
         M_log("thread_count set to 1 by default under mode 1.");
     }
@@ -82,6 +92,7 @@ void parseArguments(int argc, char** argv) {
     }
 }
 
+#ifdef USE_MPI
 /*
  * Initialize the MPI environment.
  */
@@ -104,3 +115,4 @@ void initializeMPI(int argc, char** argv) {
 void finalizeMPI() {
     MPI_Finalize();
 }
+#endif

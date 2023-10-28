@@ -1,5 +1,6 @@
 #pragma once
 #include "global.h"
+#include <string>
 
 extern GlobalConfig g_config;
 extern GlobalData g_data;

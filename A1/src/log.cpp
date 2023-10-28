@@ -30,9 +30,12 @@ void printParticleInfo() {
  * Report the execution time and other details of the program.
  */
 void report_time() {
+#ifdef USE_MPI
     if (g_config.mode == 3) {
         std::cout << "Process #" << g_config.world_rank << std::endl;
     }
+#endif
+
     std::cout << "Mode " << g_config.mode << " with " << g_config.thread_count <<
         (g_config.thread_count > 1 ? " threads " : " thread ")
         << "executed in " <<  g_data.duration.count() << " microseconds for "
@@ -45,13 +48,17 @@ void report_time() {
  * Uses different reporting mechanisms based on the mode.
  */
 void report_result() {
+#ifdef USE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
+#endif
     if (g_config.mode != 3) {
         report_time();
         printParticleInfo();
     } else {
+#ifdef USE_MPI
         synchronized_execution(report_time);
         MPI_Barrier(MPI_COMM_WORLD);
         synchronized_execution(printParticleInfo);
+#endif
     }
 }

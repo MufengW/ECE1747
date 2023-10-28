@@ -26,7 +26,7 @@ void parallel_threading() {
     }
 }
 
-
+#ifdef USE_MPI
 void worker_thread() {
     while (true) {
         std::vector<Particle> current_sub_chunk;
@@ -81,3 +81,4 @@ void synchronized_execution(std::function<void()> func_to_execute) {
         }
     }
 }
+#endif

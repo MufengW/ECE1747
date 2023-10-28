@@ -4,7 +4,6 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include <string>
 #include <vector>
 #include "log.h"
 #include "particles.h"
@@ -15,8 +14,10 @@ void populateParticleList(const std::string& data_buffer);
 /* Set the boundaries for each chunk of data */
 void setChunkBoundaries();
 
+#ifdef USE_MPI
 /* Populate the particle queue for mode 3 */
 void populateParticleQueue();
+#endif
 
 /* Parses a string line to create and return a Particle type */
 Particle parseLineToChargePoint(const std::string& line);
@@ -37,11 +38,12 @@ void loadData(const std::string file_name) {
 
     populateParticleList(data_buffer);
     setChunkBoundaries();
-
+#ifdef USE_MPI
     /* If in mode 3, populate the particle queue */
     if (g_config.mode == 3){
         populateParticleQueue();
     }
+#endif
 }
 
 /* Populate the particle_list from the data buffer */
@@ -102,6 +104,7 @@ void setChunkBoundaries() {
             start_pos = end_pos;
         }
     } else {
+#ifdef USE_MPI
         /* Calculate the start and end positions for this process */
         g_config.start_pos = g_config.world_rank * avg_lines_per_chunk;
         g_config.end_pos = g_config.start_pos + avg_lines_per_chunk;
@@ -118,6 +121,7 @@ void setChunkBoundaries() {
         g_config.end_pos += 1;
         /* Resize the particles vector for this process */
         g_data.particle_info_list.resize(g_config.end_pos - g_config.start_pos);
+#endif
     }
 
     /* Add padding particles to the particle_list for easier computation */
@@ -125,7 +129,7 @@ void setChunkBoundaries() {
     g_data.particle_list.push_front(max_p);
     g_data.particle_list.push_back(max_p);
 }
-
+#ifdef USE_MPI
 /* Populate the particle queue with sub-chunks of particles for parallel processing */
 void populateParticleQueue() {
     /* Calculate the total number of particles that the current process will handle */
@@ -161,6 +165,7 @@ void populateParticleQueue() {
         g_data.particle_queue.push(sub_chunk);
     }
 }
+#endif
 
 Particle parseLineToChargePoint(const std::string& line) {
     std::stringstream ss(line);

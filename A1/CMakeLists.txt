@@ -7,6 +7,9 @@ project(A1 VERSION 1.0)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# Add option for MPI
+option(USE_MPI "Use MPI for parallelization" OFF)
+
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
@@ -32,20 +35,22 @@ add_executable(A1
 # Find required packages
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-find_package(MPI REQUIRED)
+target_link_libraries(A1 PRIVATE Threads::Threads)
 
-# Link against pthread and MPI
-target_link_libraries(A1 PRIVATE Threads::Threads ${MPI_LIBRARIES})
+# Conditionally find and link MPI
+message(STATUS "USE_MPI is set to ${USE_MPI}")
 
-# Include MPI directories
-include_directories(${MPI_INCLUDE_PATH})
-
-if(MPI_COMPILE_FLAGS)
-  set_target_properties(A1 PROPERTIES
-    COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
-endif()
-
-if(MPI_LINK_FLAGS)
-  set_target_properties(A1 PROPERTIES
-    LINK_FLAGS "${MPI_LINK_FLAGS}")
+if(USE_MPI)
+    find_package(MPI REQUIRED)
+    target_link_libraries(A1 PRIVATE ${MPI_LIBRARIES})
+    include_directories(${MPI_INCLUDE_PATH})
+    if(MPI_COMPILE_FLAGS)
+        set_target_properties(A1 PROPERTIES
+            COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
+    endif()
+    if(MPI_LINK_FLAGS)
+        set_target_properties(A1 PROPERTIES
+            LINK_FLAGS "${MPI_LINK_FLAGS}")
+    endif()
+    add_definitions(-DUSE_MPI)
 endif()

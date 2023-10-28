@@ -35,7 +35,11 @@ if [ $num_process -gt $num_cores ]; then
   exit 1
 fi
 
-# Compile
+result_folder=$HOME/ECE1747_A1_test
+rm -rf $result_folder
+mkdir $result_folder
+
+# Compile for mode 1,2
 if (( debug == 1 )); then
     echo "Compiling in debug mode..."
     bash build.sh -m debug
@@ -45,34 +49,47 @@ else
 fi
 
 if [[ -z "$max_lines" ]]; then
-    build/A1 1 1 > 1.out 2 > /dev/null
-    build/A1 2 "$thread_count" > 2.out 2 > /dev/null
-    mpiexec -np "$num_process" build/A1 3 "$thread_count" > 3.out 2 > /dev/null
+    build/A1 1 1 > $result_folder/1.out 2> /dev/null
+    build/A1 2 "$thread_count" > $result_folder/2.out 2> /dev/null
 else
-    build/A1 1 1 "$max_lines" > 1.out 2 > /dev/null
-    build/A1 2 "$thread_count" "$max_lines" > 2.out 2 > /dev/null
-    mpiexec -np "$num_process" build/A1 3 "$thread_count" "$max_lines" > 3.out 2 > /dev/null
+    build/A1 1 1 "$max_lines" > $result_folder/1.out 2> /dev/null
+    build/A1 2 "$thread_count" "$max_lines" > $result_folder/2.out 2> /dev/null
+fi
+
+# Recompile for mode 3
+if (( debug == 1 )); then
+    echo "Compiling in debug mode..."
+    bash build.sh -m debug -p
+else
+    echo "Compiling in release mode..."
+    bash build.sh -m release -p
+fi
+
+if [[ -z "$max_lines" ]]; then
+    mpiexec -np "$num_process" build/A1 3 "$thread_count" > $result_folder/3.out 2> /dev/null
+else
+    mpiexec -np "$num_process" build/A1 3 "$thread_count" "$max_lines" > $result_folder/3.out 2> /dev/null
 fi
 
 # Print the first line of 1.out and 2.out
-head -n 1 1.out
-head -n 1 2.out
-head -n $((2 * num_process)) 3.out
+head -n 1 $result_folder/1.out
+head -n 1 $result_folder/2.out
+head -n $((2 * num_process)) $result_folder/3.out
 
 # Save the remaining lines to result*.out files
-grep 'Particle .* x = .* y = .* force = .*' 1.out | sort -k2 -n > result1.out
-grep 'Particle .* x = .* y = .* force = .*' 2.out | sort -k2 -n > result2.out
-grep 'Particle .* x = .* y = .* force = .*' 3.out | sort -k2 -n > result3.out
+grep 'Particle .* x = .* y = .* force = .*' $result_folder/1.out | sort -k2 -n > $result_folder/result1.out
+grep 'Particle .* x = .* y = .* force = .*' $result_folder/2.out | sort -k2 -n > $result_folder/result2.out
+grep 'Particle .* x = .* y = .* force = .*' $result_folder/3.out | sort -k2 -n > $result_folder/result3.out
 
 # Testing mode 2
-if diff -q result1.out result2.out >/dev/null; then
+if diff -q $result_folder/result1.out $result_folder/result2.out >/dev/null; then
     echo "Mode2 test passed!"
 else
     echo "Mode2 test failed!"
 fi
 
 # Testing mode 3
-if diff -q result1.out result3.out >/dev/null; then
+if diff -q $result_folder/result1.out $result_folder/result3.out >/dev/null; then
     echo "Mode3 test passed!"
 else
     echo "Mode3 test failed!"
