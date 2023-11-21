@@ -248,24 +248,5 @@ void parallelPrefixSumLargeData2(int32_t *d_data, int32_t *d_prefixSum, size_t s
 }
 
 void implementation(const int32_t *d_input, int32_t *d_output, size_t size) {
-    int32_t *d_data, *d_prefix_sum;
-    size_t arr_size = size * sizeof(int32_t);
-
-    // Allocate memory on the device
-    cudaMalloc(&d_data, arr_size);
-    cudaMalloc(&d_prefix_sum, arr_size);
-
-    // Copy data from host to device
-    cudaMemcpy(d_data, d_input, arr_size, cudaMemcpyHostToDevice);
-
-    // Perform the recursive scan
-    parallelPrefixSumLargeData(d_data, d_prefix_sum, size);
-
-    // Copy results back to host
-    cudaMemcpy(d_output, d_prefix_sum, arr_size, cudaMemcpyDeviceToHost);
-    // debug_print_list(d_prefix_sum, size);
-
-    // Free device memory
-    cudaFree(d_data);
-    cudaFree(d_prefix_sum);
+    parallelPrefixSumLargeData(const_cast<int32_t*>(d_input), d_output, size);
 }
