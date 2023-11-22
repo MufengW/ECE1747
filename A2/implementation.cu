@@ -4,23 +4,23 @@
 #include "stdio.h"
 #include <cuda_runtime.h>
 
-#define MAX_THREADS_PER_BLOCK 256
-#define BLOCKSZ (MAX_THREADS_PER_BLOCK * 2)
+#define THREADS_PER_BLOCK 128
+#define BLOCK_SIZE (THREADS_PER_BLOCK * 2)
 #define NUM_BANKS 16
 #define LOG_NUM_BANKS 4
 #define CONFLICT_FREE_OFFSET(n) ((n) >> NUM_BANKS + ((n) >> (2 * LOG_NUM_BANKS)))
-#define MAX_SHARE_SIZE (BLOCKSZ + CONFLICT_FREE_OFFSET(BLOCKSZ - 1))
+#define MAX_SHARE_SIZE (BLOCK_SIZE + CONFLICT_FREE_OFFSET(BLOCK_SIZE - 1))
 
 void printSubmissionInfo()
 {
     // This will be published in the leaderboard on piazza
     // Please modify this field with something interesting
-    char nick_name[] = "default-team";
+    char nick_name[] = "anonymous";
 
     // Please fill in your information (for marking purposes only)
-    char student_first_name[] = "John";
-    char student_last_name[] = "Doe";
-    char student_student_number[] = "00000000";
+    char student_first_name[] = "Mufeng";
+    char student_last_name[] = "Wang";
+    char student_student_number[] = "1003804467";
 
     // Printing out team information
     printf("*******************************************************************************************************\n");
@@ -33,16 +33,6 @@ void printSubmissionInfo()
 
 __device__ int32_t device_newIdxWithBCAO(int32_t idx) {
     return idx + CONFLICT_FREE_OFFSET(idx);
-}
-
-void debug_print_list(int32_t* list, size_t size) {
-    int32_t* h_list = new int32_t[size];
-    cudaMemcpy(h_list, list, size * sizeof(int32_t), cudaMemcpyDeviceToHost);
-    for (size_t i = 0; i < size; ++i) {
-        printf("%u:%d ", i, h_list[i]);
-    }
-    std::cout << std::endl << std::endl;
-    delete[] h_list;
 }
 
 __device__ void device_upSweep(int32_t *sharedData, int32_t threadId, int32_t totalLeaves, bool BCAO) {
@@ -87,12 +77,12 @@ __global__ void kernel_addPrefixSums(int32_t *prefixSum, int32_t *blockValues, s
 {
     int threadId = threadIdx.x;
     int blockId = blockIdx.x;
-    int blockOffset = (blockId+1) * BLOCKSZ;
+    int blockOffset = (blockId+1) * BLOCK_SIZE;
     int leftIndex = threadId * 2 + blockOffset;
     int rightIndex = threadId * 2 + 1 + blockOffset;
 
     int32_t valueToAdd = blockValues[blockId];
-    // Add the value to the elements of the prefix sum array
+
     if (leftIndex < numElements) {
         prefixSum[leftIndex] += valueToAdd;
     }
@@ -101,27 +91,27 @@ __global__ void kernel_addPrefixSums(int32_t *prefixSum, int32_t *blockValues, s
     }
 }
 
-__global__ void kernel_parallelLargeScan(int32_t *data, int32_t *prefixSum, size_t N, int32_t *blockSums, bool BCAO) {
-
-    __shared__ int32_t sharedPrefixSum[BLOCKSZ];
+__global__ void kernel_parallelLargeScan(int32_t *data, int32_t *prefixSum,
+    size_t size, int32_t *blockSums, bool BCAO) {
+    extern __shared__ int32_t sharedPrefixSum[];
     int threadId = threadIdx.x;
     int blockId = blockIdx.x;
-    int blockOffset = blockId * BLOCKSZ;
-    int leafNum = BLOCKSZ;
+    int blockOffset = blockId * BLOCK_SIZE;
+    int leafNum = BLOCK_SIZE;
 
     // Load data into shared memory
     if (BCAO) {
         int leftIndex = threadId;
         int rightIndex = threadId + (leafNum / 2);
         sharedPrefixSum[device_newIdxWithBCAO(leftIndex)] =
-            (leftIndex + blockOffset < N) ? data[leftIndex + blockOffset] : 0;
+            (leftIndex + blockOffset < size) ? data[leftIndex + blockOffset] : 0;
         sharedPrefixSum[device_newIdxWithBCAO(rightIndex)] =
-            (rightIndex + blockOffset < N) ? data[rightIndex + blockOffset] : 0;
+            (rightIndex + blockOffset < size) ? data[rightIndex + blockOffset] : 0;
     } else {
         sharedPrefixSum[threadId * 2] =
-            (threadId * 2 + blockOffset < N) ? data[threadId * 2 + blockOffset] : 0;
+            (threadId * 2 + blockOffset < size) ? data[threadId * 2 + blockOffset] : 0;
         sharedPrefixSum[threadId * 2 + 1] =
-            (threadId * 2 + 1 + blockOffset < N) ? data[threadId * 2 + 1 + blockOffset] : 0;
+            (threadId * 2 + 1 + blockOffset < size) ? data[threadId * 2 + 1 + blockOffset] : 0;
     }
     __syncthreads();
 
@@ -130,17 +120,17 @@ __global__ void kernel_parallelLargeScan(int32_t *data, int32_t *prefixSum, size
 
     // Writing the results back to global memory
     if (BCAO) {
-        if (threadId * 2 + blockOffset < N) {
+        if (threadId * 2 + blockOffset < size) {
             prefixSum[threadId * 2 + blockOffset] = sharedPrefixSum[device_newIdxWithBCAO(threadId * 2)];
         }
-        if (threadId * 2 + 1 + blockOffset < N) {
+        if (threadId * 2 + 1 + blockOffset < size) {
             prefixSum[threadId * 2 + 1 + blockOffset] = sharedPrefixSum[device_newIdxWithBCAO(threadId * 2 + 1)];
         }
     } else {
-        if (threadId * 2 + blockOffset < N) {
+        if (threadId * 2 + blockOffset < size) {
             prefixSum[threadId * 2 + blockOffset] = sharedPrefixSum[threadId * 2];
         }
-        if (threadId * 2 + 1 + blockOffset < N) {
+        if (threadId * 2 + 1 + blockOffset < size) {
             prefixSum[threadId * 2 + 1 + blockOffset] = sharedPrefixSum[threadId * 2 + 1];
         }
     }
@@ -148,67 +138,23 @@ __global__ void kernel_parallelLargeScan(int32_t *data, int32_t *prefixSum, size
 }
 
 void parallelPrefixSumLargeData(int32_t *d_data, int32_t *d_prefixSum, size_t size) {
-    size_t blockNum = (size + BLOCKSZ - 1) / BLOCKSZ;
+    size_t blockNum = (size + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
     int32_t *d_blockSums, *d_blockSumsPrefix;
     cudaMalloc(&d_blockSums, blockNum * sizeof(int32_t));
-    cudaMalloc(&d_blockSumsPrefix, blockNum * sizeof(int32_t));
 
     // Bank Conflict Avoidance Optimization
-    bool BCAO = false;
-    kernel_parallelLargeScan<<<blockNum, MAX_THREADS_PER_BLOCK>>>(d_data, d_prefixSum, size, d_blockSums, BCAO);
+    bool BCAO = true;
+    size_t shared_size = BCAO ? MAX_SHARE_SIZE : BLOCK_SIZE;
+    kernel_parallelLargeScan<<<blockNum, THREADS_PER_BLOCK, shared_size * sizeof(int32_t)>>>
+        (d_data, d_prefixSum, size, d_blockSums, BCAO);
 
     if (blockNum > 1) {
+        cudaMalloc(&d_blockSumsPrefix, blockNum * sizeof(int32_t));
         parallelPrefixSumLargeData(d_blockSums, d_blockSumsPrefix, blockNum);
-        kernel_addPrefixSums<<<blockNum-1, MAX_THREADS_PER_BLOCK>>>(d_prefixSum, d_blockSumsPrefix, size);
+        kernel_addPrefixSums<<<blockNum - 1, THREADS_PER_BLOCK>>>(d_prefixSum, d_blockSumsPrefix, size);
+        cudaFree(d_blockSumsPrefix);
     }
-
-    cudaFree(d_blockSums);
-    cudaFree(d_blockSumsPrefix);
-}
-
-void parallelPrefixSumLargeData2(int32_t *d_data, int32_t *d_prefixSum, size_t size) {
-    size_t blockNum = (size + BLOCKSZ - 1) / BLOCKSZ;
-
-    int32_t *d_blockSums;
-    cudaMalloc(&d_blockSums, blockNum * sizeof(int32_t));
-
-    bool BCAO = false;
-
-    // Step 1: Perform the scan on each block
-    kernel_parallelLargeScan<<<blockNum, MAX_THREADS_PER_BLOCK>>>(d_data, d_prefixSum, size, d_blockSums, BCAO);
-    // debug_print_list(d_prefixSum, size);
-
-    // Handling the case when there are multiple blocks
-    if (blockNum > 1) {
-        // Step 2: Iteratively compute the scan of the block sums
-        size_t currentSize = blockNum;
-        int32_t *d_tempBlockSums, *d_swap;
-        cudaMalloc(&d_tempBlockSums, blockNum * sizeof(int32_t));
-
-        // Copy the initial block sums to the temporary array
-        cudaMemcpy(d_tempBlockSums, d_blockSums, blockNum * sizeof(int32_t), cudaMemcpyDeviceToDevice);
-
-        while (currentSize > 1) {
-            size_t currentBlockNum = (currentSize + BLOCKSZ - 1) / BLOCKSZ;
-
-            kernel_parallelLargeScan<<<currentBlockNum, MAX_THREADS_PER_BLOCK>>>(d_tempBlockSums, d_blockSums, currentSize, d_blockSums, BCAO);
-
-            // Swap the pointers for the next iteration
-            d_swap = d_tempBlockSums;
-            d_tempBlockSums = d_blockSums;
-            d_blockSums = d_swap;
-
-            currentSize = currentBlockNum;
-        }
-
-        // Step 3: Add the scanned block sums to the prefix sum of each block
-        // Be sure to use the correct array that holds the final scanned block sums
-        kernel_addPrefixSums<<<blockNum - 1, MAX_THREADS_PER_BLOCK>>>(d_prefixSum, d_tempBlockSums, size);
-
-        cudaFree(d_tempBlockSums);
-    }
-
     cudaFree(d_blockSums);
 }
 
